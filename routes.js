@@ -87,7 +87,9 @@ router.post('/users', [
       .withMessage('Please provide a value for "last name"'),
     check('emailAddress')
       .exists({ checkNull: true, checkFalsy: true })
-      .withMessage('Please provide a value for "email"'),
+      .withMessage('Please provide a value for "email"')
+      .isEmail()
+      .withMessage('Please provide a valid email address for "email"'),
     check('password')
       .exists({ checkNull: true, checkFalsy: true })
       .withMessage('Please provide a value for "password"'),
@@ -108,7 +110,7 @@ router.post('/users', [
     const user = req.body;
     
     // Hash the new user's password.
-    user.password = bcryptjs.hashSync(user.password);
+    user.password = bcrypt.hashSync(user.password);
   
     // Add the user to the `users` array.
     users.push(user);
