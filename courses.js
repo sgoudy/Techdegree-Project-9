@@ -6,7 +6,7 @@ function generateRandomId(){
 
 function save(data){
   return new Promise((resolve, reject) => {
-    fs.writeFile('data.json', JSON.stringify(data, null, 2), (err) => {
+    fs.writeFile('./seed/data.json', JSON.stringify(data, null, 2), (err) => {
       if (err) {
         reject(err);
       } else {
@@ -20,6 +20,7 @@ function save(data){
  * Gets all courses
  * @param None
  */
+
 function getCourses(){
   return new Promise((resolve, reject) => {
     fs.readFile('./seed/data.json', 'utf8', (err, data) => {
@@ -31,12 +32,13 @@ function getCourses(){
       }
     });
   });
-}
+};
 
 /**
  * Gets a specific course by ID
  * @param {number} id - Accepts the ID of the specified course.
  */
+
 async function getCourse(id){
   const courses = await getCourses();
   return courses.courses.find(course => course.id == id);
@@ -45,13 +47,13 @@ async function getCourse(id){
 
 /**
  * Creates a new quote record 
- * @param {Object} newCourse- Object containing info for new quote: the quote text, author and year 
+ * @param {Object} newCourse- Object containing info for new course: the course text, author and year 
  */
 async function createCourse(newCourse) {
   const courses = await getCourses(); 
   
   newCourse.id = generateRandomId(); 
-  courses.courses.push(newRecord);
+  courses.courses.push(newCourse);
   await save(courses); 
   return newCourse; 
 }
