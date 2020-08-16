@@ -6,8 +6,6 @@ const morgan = require('morgan');
 // Import Models and Sequelize
 const db = require('./models');
 const sequelize = require('./models/index').sequelize; 
-const User = require('./models').User;
-const Course = require('./models').Course;
 
 // variable to enable global error logging
 const enableGlobalErrorLogging = process.env.ENABLE_GLOBAL_ERROR_LOGGING === 'true';
@@ -23,11 +21,10 @@ app.use(morgan('dev'));
 
 
 // Import Routes
-const courses = require('./routes/courses');
-const users = require('./routes/users');
+const routes = require('./routes/routes');
 // Add routes.
-app.use('/api/courses/', courses);
-app.use('/api/users', users);
+
+app.use('/api', routes);
 
 
 //--- Error handling below, trickle-down ----//
