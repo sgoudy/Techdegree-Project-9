@@ -23,7 +23,7 @@ function save(data){
 
 function getCourses(){
   return new Promise((resolve, reject) => {
-    fs.readFile('./seed/data.json', 'utf8', (err, data) => {
+    fs.readFile('./seed/data.json'.courses, 'utf8', (err, data) => {
       if (err) {
         reject(err);
       } else {
