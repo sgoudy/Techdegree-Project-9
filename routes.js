@@ -7,9 +7,12 @@ const { validationResult, check } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const auth = require('basic-auth');
 // Require USER model
-const User = require('../models').User;
-const Course = require('../models').Course;
+const User = require('./models').User;
+const Course = require('./models').Course;
 
+const courses = require('./courses')
+
+// User list for authentication
 const users = [];
 
 // Async Try / Catch block for global error handler
@@ -68,12 +71,10 @@ const authenticateUser = (req, res, next) => {
   //------- USER routes-----------//
   
   // GET /api/users 200 - Returns the currently authenticated user
-  router.get('/users', authenticateUser, (req, res) => {
-    const user = req.currentUser;
-    res.json({
-      name: user.firstName,
-      email: user.emailAddress,
-    });
+  router.get('/users', authenticateUser, async (req, res) => {
+    // const user = req.currentUser;
+    const users = await User.findAll();
+    res.json({users});
   });
   
   // POST /api/users 201 - Creates a user, sets the Location header to "/", and returns no content
@@ -92,7 +93,7 @@ const authenticateUser = (req, res, next) => {
     check('password')
       .exists({ checkNull: true, checkFalsy: true })
       .withMessage('Please provide a value for "password"'),
-  ], async(req, res, next) => {
+  ], async (req, res, next) => {
     // Attempt to get the validation result from the Request object.
     const errors = validationResult(req);
     // If there are validation errors...
@@ -101,7 +102,6 @@ const authenticateUser = (req, res, next) => {
       // Return the validation errors to the client.
       return res.status(400).json({ errors: errorMessages });
     }
-
     // Get the user from the request body.
     const user = await User.create(req.body);
     // Hash the new user's password.
@@ -109,7 +109,7 @@ const authenticateUser = (req, res, next) => {
     // Add the user to the `users` array.
     users.push(user);
     // Set the status to 201 Created and end the response.
-    return res.status(201).end();
+    return res.status(201).redirect('/');
   });
 
 
@@ -118,9 +118,9 @@ const authenticateUser = (req, res, next) => {
 
 // GET /api/courses 200 - Returns a list of courses (including the user that owns each course)
 router.get('/courses', asyncHandler ( async (req,res)=>{
-    const courseList = await courses.getCourses();
-    res.json(courseList);
-    res.json({message: err.message});
+    const courses = await Course.findAll();
+    res.json(courses);
+    
 }));
 
 
@@ -128,7 +128,7 @@ router.get('/courses', asyncHandler ( async (req,res)=>{
 // GET /api/courses/:id 200 - Returns a the course (including the user that owns the course) for the provided course ID
 router.get('/courses/:id', asyncHandler( async(req, res)=>{
     const id = req.params.id;
-    const course = await Courses.getCourses(id);
+    const course = await Course.findByPk(id);
     if(course){
       res.json(course);
     } else {
@@ -150,16 +150,14 @@ router.post('/courses', authenticateUser, [
     ], asyncHandler ( async (req, res, next) => {
   // Attempt to get the validation result from the Request object.
     const errors = validationResult(req);
-
     // If there are validation errors...
     if (!errors.isEmpty()) {
         // Use the Array `map()` method to get a list of error messages.
         const errorMessages = errors.array().map(error => error.msg);
-
         // Return the validation errors to the client.
         return res.status(400).json({ errors: errorMessages });
     }
-    const course = await courses.createCourse({
+    const course = await Course.create({
         id: req.body.id,
         userId: req.body.userId,
         title: req.body.title,
@@ -167,7 +165,7 @@ router.post('/courses', authenticateUser, [
         estimatedTime: req.body.estimatedTime,
         materialsNeeded: req.body.materialsNeeded
     });
-      coursesArr.push(course);
+      //coursesArr.push(course);
       res.status(201).json(course);
 }));
 

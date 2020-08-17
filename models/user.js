@@ -18,13 +18,13 @@ module.exports = (sequelize) => {
       allowNull: false
     },
     emailAddress: {
-        type: Sequelize.STRING,
-        allowNull: false
+      type: Sequelize.STRING,
+      allowNull: false
     },
     password: {
       type: Sequelize.STRING,
       allowNull: false
-  },
+    },
   }, { sequelize });
 
   User.associate = (models) => {

@@ -21,13 +21,28 @@ app.use(morgan('dev'));
 
 
 // Import Routes
-const routes = require('./routes/routes');
-// Add routes.
+const routes = require('./routes');
+
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Welcome to the REST API Project!',
+  });
+});
 
 app.use('/api', routes);
 
+//---------------Connectivity---------------//
+// Test database connection
+(async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('Connection to the database successful!');
+  } catch (error) {
+    console.error('Error connecting to the database: ', error);
+  }
+})();
 
-//--- Error handling below, trickle-down ----//
+//---------------Error handling---------------//
 // send 404 if no other route matched
 app.use((req, res) => {
   res.status(404).json({
