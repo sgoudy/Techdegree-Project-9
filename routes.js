@@ -3,7 +3,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { validationResult, check } = require('express-validator');
+const { validationResult, check, body } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const auth = require('basic-auth');
 // Require USER model
@@ -24,14 +24,13 @@ function asyncHandler(cb){
     }
 };
 
-
 /**
  * Authenticate User using 'basic-auth'
  */
 
 const authenticateUser = (req, res, next) => {
     let message = null;
-  // Parse CREDS FROM HDR
+  // Parse Credentials from Header
     const credentials = auth(req);
     if (credentials) {
       const user = users.find(u => u.emailAddress === credentials.name);
@@ -66,7 +65,7 @@ const authenticateUser = (req, res, next) => {
   
   
   //------- USER routes-----------//
-  // TODO why do I need to create a user prior to all interactions?
+
   // GET /api/users 200 - Returns the currently authenticated user
   router.get('/users', authenticateUser, async (req, res) => {
     const user = req.currentUser;
@@ -74,10 +73,11 @@ const authenticateUser = (req, res, next) => {
       First_Name: user.firstName,
       Last_Name: user.lastName,
       Email: user.emailAddress,
-      id: user.id
+      ID: user.id
     });
   });
   
+
   // POST /api/users 201 - Creates a user, sets the Location header to "/", and returns no content
   router.post('/users', [
     check('firstName')
@@ -117,13 +117,13 @@ const authenticateUser = (req, res, next) => {
 
   //------- COURSE routes-----------//
 
-// TODO remove timestamps from print-out
 // GET /api/courses 200 - Returns a list of courses (including the user that owns each course)
 router.get('/courses', asyncHandler ( async (req,res)=>{
-    const courses = await Course.findAll();
+    const courses = await Course.findAll({
+      attributes: ['id', 'title', 'description', 'estimatedTime', 'materialsNeeded', 'userId']
+    });
     res.json(courses);
 }));
-
 
 
 // GET /api/courses/:id 200 - Returns a the course (including the user that owns the course) for the provided course ID
@@ -131,13 +131,18 @@ router.get('/courses/:id', asyncHandler( async(req, res)=>{
     const id = req.params.id;
     const course = await Course.findByPk(id);
     if(course){
-      res.json(course);
+      res.json({
+        Course_ID: course.id,
+        Name: course.title,
+        Description: course.description,
+        Estimated_Time: course.estimatedTime,
+        Materials_Needed: course.materialsNeeded
+      });
     } else {
       res.status(404).json({message: "Course not found."})
     }
     res.status(500).json({message: err.message})
 }));
-
 
 
 // POST /api/courses 201 - Creates a course, sets the Location header to the URI for the course, and returns no content
@@ -170,7 +175,6 @@ router.post('/courses', authenticateUser, [
 }));
 
 
-// TODO verify course owner prior to update
 // PUT /api/courses/:id 204 - Updates a course and returns no content
 router.put('/courses/:id', authenticateUser, asyncHandler (async(req,res,next)=> {
   // const id = req.params.id;
@@ -185,7 +189,6 @@ router.put('/courses/:id', authenticateUser, asyncHandler (async(req,res,next)=>
 }));
 
 
-// TODO verify course owner prior to deletion
 // DELETE /api/courses/:id 204 - Deletes a course and returns no content
 router.delete('/courses/:id', authenticateUser, asyncHandler (async(req,res)=>{ 
   const course = await Course.findByPk(req.params.id);

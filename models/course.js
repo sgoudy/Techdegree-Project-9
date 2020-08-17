@@ -27,7 +27,7 @@ module.exports = (sequelize) => {
             fieldName: 'userId',
             allowNull: false
          }
-        });
-    };
+    });
+  };
   return Course;
 };
