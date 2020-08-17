@@ -10,8 +10,6 @@ const auth = require('basic-auth');
 const User = require('./models').User;
 const Course = require('./models').Course;
 
-const courses = require('./courses')
-
 // User list for authentication
 const users = [];
 
@@ -68,12 +66,16 @@ const authenticateUser = (req, res, next) => {
   
   
   //------- USER routes-----------//
-  
+  // TODO why do I need to create a user prior to all interactions?
   // GET /api/users 200 - Returns the currently authenticated user
   router.get('/users', authenticateUser, async (req, res) => {
-    // const user = req.currentUser;
-    const users = await User.findAll();
-    res.json({users});
+    const user = req.currentUser;
+    res.json({
+      First_Name: user.firstName,
+      Last_Name: user.lastName,
+      Email: user.emailAddress,
+      id: user.id
+    });
   });
   
   // POST /api/users 201 - Creates a user, sets the Location header to "/", and returns no content
@@ -115,11 +117,11 @@ const authenticateUser = (req, res, next) => {
 
   //------- COURSE routes-----------//
 
+// TODO remove timestamps from print-out
 // GET /api/courses 200 - Returns a list of courses (including the user that owns each course)
 router.get('/courses', asyncHandler ( async (req,res)=>{
     const courses = await Course.findAll();
     res.json(courses);
-    
 }));
 
 
@@ -140,71 +142,65 @@ router.get('/courses/:id', asyncHandler( async(req, res)=>{
 
 // POST /api/courses 201 - Creates a course, sets the Location header to the URI for the course, and returns no content
 router.post('/courses', authenticateUser, [
-    check('title')
-        .exists({ checkNull: true, checkFalsy: true })
-        .withMessage('Please provide a value for "title"'),
-    check('description')
-        .exists({ checkNull: true, checkFalsy: true })
-        .withMessage('Please provide a value for "description"'),
-    ], asyncHandler ( async (req, res, next) => {
+  check('title')
+      .exists({ checkNull: true, checkFalsy: true })
+      .withMessage('Please provide a value for "title"'),
+  check('description')
+      .exists({ checkNull: true, checkFalsy: true })
+      .withMessage('Please provide a value for "description"'),
+  ], asyncHandler ( async (req, res, next) => {
   // Attempt to get the validation result from the Request object.
-    const errors = validationResult(req);
-    // If there are validation errors...
-    if (!errors.isEmpty()) {
-        // Use the Array `map()` method to get a list of error messages.
-        const errorMessages = errors.array().map(error => error.msg);
-        // Return the validation errors to the client.
-        return res.status(400).json({ errors: errorMessages });
-    }
-    const course = await Course.create({
-        id: req.body.id,
-        userId: req.body.userId,
-        title: req.body.title,
-        description: req.body.description,
-        estimatedTime: req.body.estimatedTime,
-        materialsNeeded: req.body.materialsNeeded
-    });
-      res.status(201).json(course);
+  const errors = validationResult(req);
+  // If there are validation errors...
+  if (!errors.isEmpty()) {
+      // Use the Array `map()` method to get a list of error messages.
+      const errorMessages = errors.array().map(error => error.msg);
+      // Return the validation errors to the client.
+      return res.status(400).json({ errors: errorMessages });
+  }
+  const course = await Course.create({
+      id: req.body.id,
+      userId: req.body.userId,
+      title: req.body.title,
+      description: req.body.description,
+      estimatedTime: req.body.estimatedTime,
+      materialsNeeded: req.body.materialsNeeded
+  });
+  res.status(201).json(course);
 }));
 
 
-
+// TODO verify course owner prior to update
 // PUT /api/courses/:id 204 - Updates a course and returns no content
 router.put('/courses/:id', authenticateUser, asyncHandler (async(req,res,next)=> {
-  const id = req.params.id;
-  const course = await Course.findByPk(id);
+  // const id = req.params.id;
+  const course = await Course.findByPk(req.params.id);
   if (course){
-    course.id = req.body.id;
-    course.title = req.body.title;
-    course.description = req.body.description;
-    course.estimatedTime = req.body.estimatedTime;
-    course.materialsNeeded = req.body.materialsNeeded;
-    await Course.update(course);
+    await course.update(req.body);
     res.status(204).end();
   } else {
     res.status(404).json({message: "Course Not Found."})
   }
-    res.status(500).json({message: err.message})
+  res.status(500).json({message: err.message})
 }));
 
 
-
+// TODO verify course owner prior to deletion
 // DELETE /api/courses/:id 204 - Deletes a course and returns no content
 router.delete('/courses/:id', authenticateUser, asyncHandler (async(req,res)=>{ 
-  const id = req.params.id;
-  const course = await Course.findByPk(id);
+  const course = await Course.findByPk(req.params.id);
   if(course){
-    await Course.destroy({
+    await course.destroy({
       where: {
-        id: id
+        id: req.params.id
       }
     });
     res.status(204).end();
-    } else {
-      res.status(404).json({message: "Course Not Found."})
-    }
+  } else {
+    res.status(404).json({message: "Course Not Found."})
+  }
   res.status(500).json({message: err.message})
 }));
 
   
-  module.exports = router;
+module.exports = router;
