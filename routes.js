@@ -41,7 +41,6 @@ const authenticateUser = (req, res, next) => {
       console.log(users)
       if (user) {
   // Compare email to password
-
         const authenticated = bcrypt
           .compareSync(credentials.pass, user.password);
         // If the passwords match...
@@ -165,22 +164,22 @@ router.post('/courses', authenticateUser, [
         estimatedTime: req.body.estimatedTime,
         materialsNeeded: req.body.materialsNeeded
     });
-      //coursesArr.push(course);
       res.status(201).json(course);
 }));
 
 
 
 // PUT /api/courses/:id 204 - Updates a course and returns no content
-router.put('/courses/:id', authenticateUser, asyncHandler (async(req,res)=> {
-    const course = await courses.getCourse(req.params.id);
+router.put('/courses/:id', authenticateUser, asyncHandler (async(req,res,next)=> {
+  const id = req.params.id;
+  const course = await Course.findByPk(id);
   if (course){
     course.id = req.body.id;
     course.title = req.body.title;
     course.description = req.body.description;
     course.estimatedTime = req.body.estimatedTime;
     course.materialsNeeded = req.body.materialsNeeded;
-    await courses.updateCourse(course);
+    await Course.update(course);
     res.status(204).end();
   } else {
     res.status(404).json({message: "Course Not Found."})
@@ -192,14 +191,19 @@ router.put('/courses/:id', authenticateUser, asyncHandler (async(req,res)=> {
 
 // DELETE /api/courses/:id 204 - Deletes a course and returns no content
 router.delete('/courses/:id', authenticateUser, asyncHandler (async(req,res)=>{ 
-    const course = await courses.getCourse(req.params.id);
+  const id = req.params.id;
+  const course = await Course.findByPk(id);
   if(course){
-    await courses.deleteCourse(course);
+    await Course.destroy({
+      where: {
+        id: id
+      }
+    });
     res.status(204).end();
     } else {
       res.status(404).json({message: "Course Not Found."})
     }
-    res.status(500).json({message: err.message})
+  res.status(500).json({message: err.message})
 }));
 
   
