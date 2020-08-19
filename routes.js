@@ -68,7 +68,7 @@ router.get('/users', authenticateUser, async (req, res) => {
   res.json({user});
 });
   
-//TODO "The POST /api/users route validates that the provided email address is a valid email address and isn't already associated with an existing user."
+
 // POST /api/users 201 - Creates a user, sets the Location header to "/", and returns no content
 router.post('/users', [
   check('firstName')
@@ -86,20 +86,30 @@ router.post('/users', [
     .exists({ checkNull: true, checkFalsy: true })
     .withMessage('Please provide a value for "password"'),
 ], async (req, res, next) => {
-  // Attempt to get the validation result from the Request object.
+  const email = req.body.emailAddress;
+// Roundabout way to find duplicate emails.
+  const duplicateEmail = await User.findAll({
+    where: {
+      emailAddress: email
+    }
+  });
+// Validation Errors 
   const errors = validationResult(req);
-  // If there are validation errors...
-  if (!errors.isEmpty()) {
+  if (!errors.isEmpty()){
     const errorMessages = errors.array().map(error => error.msg);
     return res.status(400).json({ errors: errorMessages });
-  }
-  // Get the user from the request body & hash password.
+    } 
+// Duplicate Email exists!
+    else if (duplicateEmail.length > 0){
+    return res.status(400).json({errors: 'Email already in use!'})
+    } 
+// Good request, hash password
+  else {
   const user = await User.create(req.body);
   user.password = bcrypt.hashSync(user.password);
-  // Set the status to 201 Created and end the response.
   return res.status(201).redirect('/');
+  }
 });
-
 
 
   //------- COURSE routes-----------//
@@ -161,7 +171,7 @@ router.post('/courses', authenticateUser, [
   res.status(201).json(course);
 }));
 
-// TODO "The PUT /api/courses/:id and DELETE /api/courses/:id routes return a 403 status code if the current user doesn't own the requested course."
+
 // PUT /api/courses/:id 204 - Updates a course and returns no content
 router.put('/courses/:id', authenticateUser, asyncHandler (async(req,res, next)=> {
   const id = req.params.id;
