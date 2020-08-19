@@ -11,9 +11,6 @@ const auth = require('basic-auth');
 const User = require('./models').User;
 const Course = require('./models').Course;
 
-// User list for authentication
-const users = [];
-
 // Async Try / Catch block for global error handler
 function asyncHandler(cb){
     return async (req, res, next)=>{
@@ -68,12 +65,7 @@ const authenticateUser = async (req, res, next) => {
 // GET /api/users 200 - Returns the currently authenticated user
 router.get('/users', authenticateUser, async (req, res) => {
   const user = req.currentUser;
-  res.json({user
-    // First_Name: user.firstName,
-    // Last_Name: user.lastName,
-    // Email: user.emailAddress,
-    // ID: user.id
-  });
+  res.json({user});
 });
   
 //TODO "The POST /api/users route validates that the provided email address is a valid email address and isn't already associated with an existing user."
@@ -99,15 +91,11 @@ router.post('/users', [
   // If there are validation errors...
   if (!errors.isEmpty()) {
     const errorMessages = errors.array().map(error => error.msg);
-    // Return the validation errors to the client.
     return res.status(400).json({ errors: errorMessages });
   }
-  // Get the user from the request body.
+  // Get the user from the request body & hash password.
   const user = await User.create(req.body);
-  // Hash the new user's password.
   user.password = bcrypt.hashSync(user.password);
-  // Add the user to the `users` array.
-  users.push(user);
   // Set the status to 201 Created and end the response.
   return res.status(201).redirect('/');
 });
