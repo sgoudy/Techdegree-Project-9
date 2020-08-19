@@ -15,7 +15,7 @@ const Course = require('./models').Course;
 function asyncHandler(cb){
     return async (req, res, next)=>{
       try {
-        await cb(req,res, next);
+        await cb(req, res, next);
       } catch(err){
         next(err);
       }
@@ -163,33 +163,36 @@ router.post('/courses', authenticateUser, [
 
 // TODO "The PUT /api/courses/:id and DELETE /api/courses/:id routes return a 403 status code if the current user doesn't own the requested course."
 // PUT /api/courses/:id 204 - Updates a course and returns no content
-router.put('/courses/:id', authenticateUser, asyncHandler (async(req,res,next)=> {
-  const course = await Course.findByPk(req.params.id);
-  if (course){
+router.put('/courses/:id', authenticateUser, asyncHandler (async(req,res, next)=> {
+  const id = req.params.id;
+  const course = await Course.findByPk(id);
+  const owner = req.currentUser.id;
+  if (course && owner === course.userId){
     await course.update(req.body);
     res.status(204).end();
+  } else if (course && owner !== course.userId){
+    res.status(403).json({message: "User must be Course Owner in order to Update Course"})
   } else {
     res.status(404).json({message: "Course Not Found."})
   }
   res.status(500).json({message: err.message})
 }));
 
-// TODO "The PUT /api/courses/:id and DELETE /api/courses/:id routes return a 403 status code if the current user doesn't own the requested course."
-// DELETE /api/courses/:id 204 - Deletes a course and returns no content
+
+// DELETE /api/courses/:id 204 - Deletes a course (if owned by requestor) and returns no content
 router.delete('/courses/:id', authenticateUser, asyncHandler (async(req,res)=>{ 
   const course = await Course.findByPk(req.params.id);
-  const owner = req.currentUser;
-  const ownerId = owner.id;
+  const owner = req.currentUser.id;
   const courseOwner = course.userId;
-  if(course && ownerId === courseOwner){
+  if (course && owner=== courseOwner){
     await course.destroy({
       where: {
         id: req.params.id
       }
     });
     res.status(204).end();
-  } else if (course && ownerId !== courseOwner){
-    res.status(404).json({message: "User must be Course Owner in order to Delete Course"})
+  } else if (course && owner !== courseOwner){
+    res.status(403).json({message: "User must be Course Owner in order to Delete Course"})
   } else {
     res.status(404).json({message: "Course Not Found."})
   }
