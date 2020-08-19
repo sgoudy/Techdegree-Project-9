@@ -65,7 +65,12 @@ const authenticateUser = async (req, res, next) => {
 // GET /api/users 200 - Returns the currently authenticated user
 router.get('/users', authenticateUser, async (req, res) => {
   const user = req.currentUser;
-  res.json({user});
+  res.json({
+    User_ID: user.id,
+    First_Name: user.firstName,
+    Last_Name: user.lastName,
+    Email: user.emailAddress
+  });
 });
   
 
