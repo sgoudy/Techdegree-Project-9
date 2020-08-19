@@ -29,32 +29,30 @@ function asyncHandler(cb){
  * Authenticate User using 'basic-auth'
  */
 
-const authenticateUser = (req, res, next) => {
+const authenticateUser = async (req, res, next) => {
     let message = null;
+    let user;
   // Parse Credentials from Header
     const credentials = auth(req);
     if (credentials) {
-      const user = users.find(u => u.emailAddress === credentials.name);
-      // If a user was successfully retrieved from the data store...
-      console.log(users)
-      if (user) {
-  // Compare email to password
-        const authenticated = bcrypt
-          .compareSync(credentials.pass, user.password);
-        // If the passwords match...
-        if (authenticated) {
-          console.log(`Authentication successful for name: ${user.emailAddress}`);
-          req.currentUser = user;
-        } else {
-          message = `Authentication failure for name: ${user.emailAddress}`;
+      user = await User.findOne({
+        attributes: ['id', 'firstName', 'lastName', 'emailAddress', 'password'],
+        where: {
+          emailAddress: credentials.name
         }
-      } else {
-        message = `User not found for name: ${credentials.emailAddress}`;
-      }
+      })
+        if (user && credentials.pass === user.password) {
+          console.log(`Authentication successful for: ${credentials.name}`);
+          req.currentUser = user;
+          } else if (!user) {
+            message = `User not found for: ${credentials.name}`
+          } else if (credentials.pass !== user.password){
+            message = `Authentication failure for: ${credentials.name}`
+          }        
     } else {
-      message = 'Auth header not found';
+      message = `Auth header not found`;
     }
-  // FAILED AUTH
+  //FAILED AUTH
     if (message) {
       console.warn(message);
       res.status(401).json({ message: 'Access Denied' });
@@ -70,11 +68,11 @@ const authenticateUser = (req, res, next) => {
 // GET /api/users 200 - Returns the currently authenticated user
 router.get('/users', authenticateUser, async (req, res) => {
   const user = req.currentUser;
-  res.json({
-    First_Name: user.firstName,
-    Last_Name: user.lastName,
-    Email: user.emailAddress,
-    ID: user.id
+  res.json({user
+    // First_Name: user.firstName,
+    // Last_Name: user.lastName,
+    // Email: user.emailAddress,
+    // ID: user.id
   });
 });
   
