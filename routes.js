@@ -31,6 +31,7 @@ const authenticateUser = async (req, res, next) => {
     let user;
   // Parse Credentials from Header
     const credentials = auth(req);
+
     if (credentials) {
       user = await User.findOne({
         attributes: ['id', 'firstName', 'lastName', 'emailAddress', 'password'],
@@ -38,14 +39,18 @@ const authenticateUser = async (req, res, next) => {
           emailAddress: credentials.name
         }
       })
-        if (user && credentials.pass === user.password) {
-          console.log(`Authentication successful for: ${credentials.name}`);
-          req.currentUser = user;
-          } else if (!user) {
+        if (user){
+
+          if (user.password === credentials.pass){
+            console.log(`Authentication successful for: ${credentials.name}`);
+            req.currentUser = user;
+          } else {
+            message = `Authentication failure for username: ${user.username}`;
+          }
+          
+        } else {
             message = `User not found for: ${credentials.name}`
-          } else if (credentials.pass !== user.password){
-            message = `Authentication failure for: ${credentials.name}`
-          }        
+        }       
     } else {
       message = `Auth header not found`;
     }
@@ -65,6 +70,7 @@ const authenticateUser = async (req, res, next) => {
 // GET /api/users 200 - Returns the currently authenticated user
 router.get('/users', authenticateUser, async (req, res) => {
   const user = req.currentUser;
+  console.log(user)
   res.json({
     User_ID: user.id,
     First_Name: user.firstName,
@@ -90,31 +96,23 @@ router.post('/users', [
   check('password')
     .exists({ checkNull: true, checkFalsy: true })
     .withMessage('Please provide a value for "password"'),
-], async (req, res, next) => {
-  const email = req.body.emailAddress;
-// Roundabout way to find duplicate emails.
-  const duplicateEmail = await User.findAll({
-    where: {
-      emailAddress: email
-    }
-  });
-// Validation Errors 
+], async(req, res, next) => {
+// Validation Errors    
   const errors = validationResult(req);
-  if (!errors.isEmpty()){
-    const errorMessages = errors.array().map(error => error.msg);
-    return res.status(400).json({ errors: errorMessages });
-    } 
-// Duplicate Email exists!
-    else if (duplicateEmail.length > 0){
-    return res.status(400).json({errors: 'Email already in use!'})
-    } 
+    if (!errors.isEmpty()){
+        const errorMessages = errors.array().map(error => error.msg);
+        return res.status(400).json({ errors: errorMessages });
+    }
 // Good request, hash password
-  else {
-  const user = await User.create(req.body);
-  user.password = bcrypt.hashSync(user.password);
-  return res.status(201).redirect('/');
+    await User.create({
+      firstName: req.body.firstName, 
+      lastName: req.body.lastName, 
+      emailAddress: req.body.emailAddress,
+      password: await bcrypt.hash(req.body.password, 10)
+      });
+    return res.status(201).redirect('/');
   }
-});
+);
 
 
   //------- COURSE routes-----------//

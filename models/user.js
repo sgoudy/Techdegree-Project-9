@@ -19,12 +19,12 @@ module.exports = (sequelize) => {
     },
     emailAddress: {
       type: Sequelize.STRING,
-      allowNull: false
+      allowNull: false,
+      unique: true
     },
     password: {
       type: Sequelize.STRING,
-      allowNull: false,
-      logging: false
+      allowNull: false
     },
   }, { sequelize });
 
