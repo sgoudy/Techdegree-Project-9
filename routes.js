@@ -96,14 +96,9 @@ router.post('/users', [
   check('password')
     .exists({ checkNull: true, checkFalsy: true })
     .withMessage('Please provide a value for "password"'),
-], async(req, res, next) => {
-// Validation Errors    
-  const errors = validationResult(req);
-    if (!errors.isEmpty()){
-        const errorMessages = errors.array().map(error => error.msg);
-        return res.status(400).json({ errors: errorMessages });
-    }
+], async(req, res) => {
 // Good request, hash password
+  try{
     await User.create({
       firstName: req.body.firstName, 
       lastName: req.body.lastName, 
@@ -111,8 +106,20 @@ router.post('/users', [
       password: await bcrypt.hash(req.body.password, 10)
       });
     return res.status(201).redirect('/');
-  }
-);
+
+  } catch (error){
+    // Validation Errors    
+    const errors = validationResult(req);
+    if (!errors.isEmpty()){
+        const errorMessages = errors.array().map(error => error.msg);
+        return res.status(400).json({ errors: errorMessages });
+    } 
+    // Unique Email Requirement
+    else if (error.errors[0].type === 'unique violation'){
+      return res.status(400).json({message: 'Email in use.'})
+    }   
+  } 
+});
 
 
   //------- COURSE routes-----------//
@@ -129,19 +136,16 @@ router.get('/courses', asyncHandler ( async (req,res)=>{
 // GET /api/courses/:id 200 - Returns a the course (including the user that owns the course) for the provided course ID
 router.get('/courses/:id', asyncHandler( async(req, res)=>{
     const id = req.params.id;
-    const course = await Course.findByPk(id);
-    if(course){
-      res.json({
-        Course_ID: course.id,
-        Name: course.title,
-        Description: course.description,
-        Estimated_Time: course.estimatedTime,
-        Materials_Needed: course.materialsNeeded
-      });
+    const course = await Course.findOne({
+      attributes: ['id', 'title', 'description', 'estimatedTime', 'materialsNeeded', 'userId'],
+    where: {
+      id: id
+    }});
+    if (course) {
+      res.json(course);
     } else {
       res.status(404).json({message: "Course not found."})
     }
-    res.status(500).json({message: err.message})
 }));
 
 
