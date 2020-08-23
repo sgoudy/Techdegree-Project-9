@@ -188,34 +188,29 @@ router.put('/courses/:id', authenticateUser, [
       .exists({ checkNull: true, checkFalsy: true })
       .withMessage('Please provide a value for "description"'),
   ], asyncHandler (async(req,res, next)=> {
-  const id = req.params.id;  
+  const id = req.params.id; 
+  const owner = req.currentUser.id; 
   const course = await Course.findByPk(id);
   if (course){
-    // Attempt to get the validation result from the Request object.
-  const errors = validationResult(req);
-  // If there are validation errors...
-  if (!errors.isEmpty()) {
-      // Use the Array `map()` method to get a list of error messages.
-      const errorMessages = errors.array().map(error => error.msg);
-      // Return the validation errors to the client.
-      return res.status(400).json({ errors: errorMessages });
-  }
-  
-  
-  const owner = req.currentUser.id;
-  if (course && owner === course.userId){
-    await course.update(req.body);
-    res.status(204).end();
-  } else {
-    res.status(403).json({message: "User must be Course Owner in order to Update Course"})
-  } 
-  }
-  else{
+    if (course && owner === course.userId){
+      // Attempt to get the validation result from the Request object.
+      const errors = validationResult(req);
+      // If there are validation errors...
+      if (!errors.isEmpty()) {
+        // Use the Array `map()` method to get a list of error messages.
+        const errorMessages = errors.array().map(error => error.msg);
+        // Return the validation errors to the client.
+        return res.status(400).json({ errors: errorMessages });
+      }
+      await course.update(req.body);
+      res.status(204).end();
+    } else {
+      res.status(403).json({message: "User must be Course Owner in order to Update Course"})
+    } 
+  } else{
     res.status(404).json({message: "Course Not Found."})
-  }  
-
   }
-));
+}));
 
 
 // DELETE /api/courses/:id 204 - Deletes a course (if owned by requestor) and returns no content

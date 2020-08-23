@@ -9,8 +9,9 @@ This is yet another stepping stone towards completing the Full-Stack JavaScript 
 - [VSCode](https://code.visualstudio.com/)
 
 ## Installation
-1. npm install
-2. npm start
+1. "npm install"
+2. "npm run seed"
+3. "npm start" or "nodemon"
 3. localhost: 5000 in Postman
 4. Database can be viewed with DB Browser for SQLite
 
