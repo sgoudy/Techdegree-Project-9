@@ -40,14 +40,13 @@ const authenticateUser = async (req, res, next) => {
         }
       })
         if (user){
-
-          if (user.password === credentials.pass){
+          const authenticated = bcrypt.compareSync(credentials.pass, user.password);
+          if (authenticated){
             console.log(`Authentication successful for: ${credentials.name}`);
             req.currentUser = user;
           } else {
             message = `Authentication failure for username: ${user.username}`;
           }
-          
         } else {
             message = `User not found for: ${credentials.name}`
         }       
