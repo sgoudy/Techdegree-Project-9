@@ -97,6 +97,12 @@ router.post('/users', [
 ], asyncHandler (async(req, res) => {
   // Good request, hash password
   try{
+    // Validation Errors prior to storing new User data   
+    const errors = validationResult(req);
+    if (!errors.isEmpty()){
+        const errorMessages = errors.array().map(error => error.msg);
+        return res.status(400).json({ errors: errorMessages });
+    } 
     await User.create({
       firstName: req.body.firstName, 
       lastName: req.body.lastName, 
@@ -104,14 +110,8 @@ router.post('/users', [
       password: await bcrypt.hash(req.body.password, 10)
       });
   } catch (error){
-    // Validation Errors    
-    const errors = validationResult(req);
-    if (!errors.isEmpty()){
-        const errorMessages = errors.array().map(error => error.msg);
-        return res.status(400).json({ errors: errorMessages });
-    } 
     // Unique Email Requirement
-    else if (error.errors[0].type === 'unique violation'){
+    if (error.errors[0].type === 'unique violation'){
       return res.status(400).json({message: 'Email in use.'})
     }   
   } 
