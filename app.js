@@ -22,13 +22,6 @@ app.use(morgan('dev'));
 // Import Routes
 const routes = require('./routes');
 
-// Welcome handler
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Welcome to the REST API Project!',
-  });
-});
-
 // Insert 'api' prior to all routes
 app.use('/api', routes);
 

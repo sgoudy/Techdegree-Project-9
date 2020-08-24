@@ -67,13 +67,14 @@ const authenticateUser = async (req, res, next) => {
 
 // GET /api/users 200 - Returns the currently authenticated user
 router.get('/users', authenticateUser, async (req, res) => {
-  const user = req.currentUser;
-  res.json({
-    User_ID: user.id,
-    First_Name: user.firstName,
-    Last_Name: user.lastName,
-    Email: user.emailAddress
+  const user = req.currentUser.id;
+  const userInfo = await User.findOne({
+    attributes: ['id', 'firstName', 'lastName', 'emailAddress'],
+    where: {
+      id: user
+    }
   });
+  res.json({userInfo});
 });
   
 
@@ -102,7 +103,6 @@ router.post('/users', [
       emailAddress: req.body.emailAddress,
       password: await bcrypt.hash(req.body.password, 10)
       });
-    return res.status(201).redirect('/');
   } catch (error){
     // Validation Errors    
     const errors = validationResult(req);
@@ -115,6 +115,7 @@ router.post('/users', [
       return res.status(400).json({message: 'Email in use.'})
     }   
   } 
+  res.status(201).location('/').end();
 }));
 
 
@@ -123,7 +124,11 @@ router.post('/users', [
 // GET /api/courses 200 - Returns a list of courses (including the user that owns each course)
 router.get('/courses', asyncHandler ( async (req,res)=>{
   const courses = await Course.findAll({
-    attributes: ['id', 'title', 'description', 'estimatedTime', 'materialsNeeded', 'userId']
+    include: [{
+        model: User,
+        attributes: ['id', 'firstName', 'lastName', 'emailAddress']
+      }],
+    attributes: ['id', 'title', 'description', 'estimatedTime', 'materialsNeeded']
   });
   res.json(courses);
 }));
@@ -133,7 +138,11 @@ router.get('/courses', asyncHandler ( async (req,res)=>{
 router.get('/courses/:id', asyncHandler( async(req, res)=>{
   const id = req.params.id;
   const course = await Course.findOne({
-    attributes: ['id', 'title', 'description', 'estimatedTime', 'materialsNeeded', 'userId'],
+    include: [{
+      model: User,
+      attributes: ['id', 'firstName', 'lastName', 'emailAddress']
+    }],
+    attributes: ['id', 'title', 'description', 'estimatedTime', 'materialsNeeded'],
   where: {
     id: id
   }});
@@ -171,7 +180,7 @@ router.post('/courses', authenticateUser, [
     estimatedTime: req.body.estimatedTime,
     materialsNeeded: req.body.materialsNeeded
   });
-  res.status(201).json(course);
+  res.status(201).location(`/courses/${course.id}`).end();
 }));
 
 
